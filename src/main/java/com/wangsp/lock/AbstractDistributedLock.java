@@ -46,7 +46,6 @@ public abstract class AbstractDistributedLock implements Lock {
             e.printStackTrace();
         }
 
-
         lock();
     }
 

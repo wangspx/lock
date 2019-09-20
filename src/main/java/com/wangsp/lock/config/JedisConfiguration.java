@@ -38,8 +38,9 @@ public class JedisConfiguration {
     @Bean
     public JedisPoolConfig jedisPoolConfig() {
         JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
-        jedisPoolConfig.setMaxIdle(10);
-        jedisPoolConfig.setMaxTotal(10000);
+        jedisPoolConfig.setMinIdle(10);
+        jedisPoolConfig.setMaxIdle(100);
+        jedisPoolConfig.setMaxWaitMillis(3000);
         return jedisPoolConfig;
     }
 
