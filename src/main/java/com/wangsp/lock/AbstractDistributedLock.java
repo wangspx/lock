@@ -1,5 +1,7 @@
 package com.wangsp.lock;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -10,6 +12,7 @@ import java.util.concurrent.locks.Lock;
  * @author spwang Created on 2019/9/19 at 16:07
  * @version 1.0.0
  */
+@Slf4j
 public abstract class AbstractDistributedLock implements Lock {
 
     private static final int SLEEP_TIME = 100;
@@ -29,6 +32,7 @@ public abstract class AbstractDistributedLock implements Lock {
     @Override
     public void lock() {
         if (tryLock()) {
+            log.info("加锁成功");
             return;
         }
 
@@ -38,12 +42,12 @@ public abstract class AbstractDistributedLock implements Lock {
             e.printStackTrace();
         }
 
-        tryLock();
+        log.info("再次尝试加锁");
+        lock();
     }
 
     @Override
     public void lockInterruptibly() throws InterruptedException {
-
     }
 
     @Override
