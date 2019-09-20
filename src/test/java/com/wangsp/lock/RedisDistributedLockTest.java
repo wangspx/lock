@@ -6,15 +6,13 @@ import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.test.context.junit4.SpringRunner;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
 import javax.annotation.Resource;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.*;
 
 /**
  * @author spwang Created on 2019/9/19 at 17:48
@@ -25,20 +23,36 @@ import java.util.concurrent.ThreadPoolExecutor;
 @SpringBootTest
 public class RedisDistributedLockTest {
 
-    private static final int SUMMER = 1000;
+    private static final int SUMMER = 2;
 
     @Resource
     private OrderLock orderLock;
 
     private static int ticket = 100;
 
-    private Executor executor = Executors.newCachedThreadPool();
+    private ExecutorService executor = Executors.newCachedThreadPool();
 
     private CountDownLatch countDownLatch = new CountDownLatch(SUMMER);
 
+
+    @Resource
+    private RedisConnectionFactory redisConnectionFactory;
+
     @Test
     public void redisLock_1() {
+        executor.execute(() -> {
+            Jedis jedis = (Jedis) redisConnectionFactory.getConnection().getNativeConnection();
+            jedis.set("2222","22222");
+            System.out.println(jedis.get("2222"));
+        });
         seller();
+    }
+
+    @Test
+    public void redisLock_3() {
+        Jedis jedis = (Jedis) redisConnectionFactory.getConnection().getNativeConnection();
+        jedis.set("2222","22222");
+        System.out.println(jedis.get("2222"));
     }
 
     @Test
@@ -51,14 +65,14 @@ public class RedisDistributedLockTest {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                seller();
+                orderLock.lock();
+                log.info("剩余票数：{}", --ticket);
+                orderLock.unlock();
             });
         }
     }
 
     private void seller() {
-        orderLock.lock();
-        log.info("剩余票数：{}", --ticket);
-        orderLock.unlock();
+
     }
 }

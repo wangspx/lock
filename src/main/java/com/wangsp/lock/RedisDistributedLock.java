@@ -26,8 +26,11 @@ public abstract class RedisDistributedLock extends AbstractDistributedLock {
 
     @Override
     public boolean distributedLock() {
+        System.out.println("111111111111111111111111");
         Jedis jedis = (Jedis) redisConnectionFactory.getConnection().getNativeConnection();
-        return "OK".equals(jedis.set(lockName(), UUID.randomUUID().toString(),"NX","PX",1000));
+        System.out.println("222222222222222222222222");
+        String result = jedis.set(lockName(), UUID.randomUUID().toString(), "NX", "PX", 10000);
+        return "OK".equals(result);
     }
 
     @Override

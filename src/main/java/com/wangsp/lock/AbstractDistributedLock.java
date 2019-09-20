@@ -31,7 +31,7 @@ public abstract class AbstractDistributedLock implements Lock {
 
     @Override
     public void lock() {
-        log.debug("加锁");
+        log.debug("获取锁");
         if (tryLock()) {
             log.debug("加锁成功");
             return;
