@@ -28,7 +28,7 @@ public class JedisConfiguration {
 
 
     @Bean
-    public JedisPool redisPool() {
+    public JedisPool jedisPool() {
         return new JedisPool(new JedisPoolConfig(), host, port, timeout, password);
     }
 }
