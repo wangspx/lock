@@ -6,8 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.jedis.JedisClientConfiguration;
+import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
 /**
@@ -32,12 +36,24 @@ public class JedisConfiguration {
 
 
     @Bean
-    public JedisPool jedisPool() {
-        return new JedisPool(new JedisPoolConfig(), host, port, timeout, password);
+    public JedisPoolConfig jedisPoolConfig() {
+        JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
+        jedisPoolConfig.setMaxIdle(10);
+        jedisPoolConfig.setMaxTotal(10000);
+        return jedisPoolConfig;
     }
 
     @Bean
-    public Jedis jedis(@Autowired JedisPool jedisPool) {
-        return jedisPool.getResource();
+    public RedisConnectionFactory redisConnectionFactory(JedisPoolConfig jedisPoolConfig) {
+        RedisStandaloneConfiguration redisStandaloneConfiguration = new RedisStandaloneConfiguration();
+        redisStandaloneConfiguration.setHostName(host);
+        redisStandaloneConfiguration.setPassword(password);
+        redisStandaloneConfiguration.setPort(port);
+
+        JedisClientConfiguration.JedisPoolingClientConfigurationBuilder jpcf = (JedisClientConfiguration.JedisPoolingClientConfigurationBuilder) JedisClientConfiguration.builder();
+        jpcf.poolConfig(jedisPoolConfig);
+        JedisClientConfiguration jedisClientConfiguration = jpcf.build();
+
+        return new JedisConnectionFactory(redisStandaloneConfiguration, jedisClientConfiguration);
     }
 }

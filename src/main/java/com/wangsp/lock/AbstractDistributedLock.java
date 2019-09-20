@@ -31,18 +31,22 @@ public abstract class AbstractDistributedLock implements Lock {
 
     @Override
     public void lock() {
+        log.debug("加锁");
         if (tryLock()) {
-            log.info("加锁成功");
+            log.debug("加锁成功");
             return;
         }
 
+        log.debug("获取锁失败");
+
         try {
+            log.debug("线程睡眠等待中");
             Thread.sleep(SLEEP_TIME);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
-        log.info("再次尝试加锁");
+
         lock();
     }
 

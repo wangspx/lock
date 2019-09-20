@@ -1,9 +1,7 @@
 package com.wangsp.lock;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
 
 import javax.annotation.Resource;
 import java.util.UUID;
@@ -17,7 +15,7 @@ import java.util.UUID;
 public abstract class RedisDistributedLock extends AbstractDistributedLock {
 
     @Resource
-    private Jedis jedis;
+    private RedisConnectionFactory redisConnectionFactory;
 
     /**
      * 设置redis中锁的key值
@@ -28,11 +26,13 @@ public abstract class RedisDistributedLock extends AbstractDistributedLock {
 
     @Override
     public boolean distributedLock() {
-        return jedis.setnx(lockName(), UUID.randomUUID().toString()) == 1;
+        Jedis jedis = (Jedis) redisConnectionFactory.getConnection().getNativeConnection();
+        return "OK".equals(jedis.set(lockName(), UUID.randomUUID().toString(),"NX","PX",1000));
     }
 
     @Override
     public void distributedUnlock() {
+        Jedis jedis = (Jedis) redisConnectionFactory.getConnection().getNativeConnection();
         jedis.del(lockName());
     }
 }

@@ -7,6 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.junit4.SpringRunner;
+import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
 import javax.annotation.Resource;
@@ -24,6 +25,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 @SpringBootTest
 public class RedisDistributedLockTest {
 
+    private static final int SUMMER = 1000;
+
     @Resource
     private OrderLock orderLock;
 
@@ -31,7 +34,7 @@ public class RedisDistributedLockTest {
 
     private Executor executor = Executors.newCachedThreadPool();
 
-    private CountDownLatch countDownLatch = new CountDownLatch(1000);
+    private CountDownLatch countDownLatch = new CountDownLatch(SUMMER);
 
     @Test
     public void redisLock_1() {
@@ -40,8 +43,8 @@ public class RedisDistributedLockTest {
 
     @Test
     public void redisLock_2() {
-        for (int i = 0; i < 1000; i++) {
-            executor.execute(()->{
+        for (int i = 0; i < SUMMER; i++) {
+            executor.execute(() -> {
                 countDownLatch.countDown();
                 try {
                     countDownLatch.await();
@@ -55,7 +58,7 @@ public class RedisDistributedLockTest {
 
     private void seller() {
         orderLock.lock();
-        log.info("剩余票数：{}", ticket--);
+        log.info("剩余票数：{}", --ticket);
         orderLock.unlock();
     }
 }
