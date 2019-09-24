@@ -2,11 +2,9 @@ package com.wangsp.lock.config;
 
 
 import lombok.Data;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Scope;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisClientConfiguration;
@@ -40,6 +38,7 @@ public class JedisConfiguration {
         JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
         jedisPoolConfig.setMinIdle(10);
         jedisPoolConfig.setMaxIdle(100);
+        jedisPoolConfig.setMaxTotal(100);
         jedisPoolConfig.setMaxWaitMillis(3000);
         return jedisPoolConfig;
     }
@@ -56,5 +55,10 @@ public class JedisConfiguration {
         JedisClientConfiguration jedisClientConfiguration = jpcf.build();
 
         return new JedisConnectionFactory(redisStandaloneConfiguration, jedisClientConfiguration);
+    }
+
+    @Bean
+    public Jedis jedis(RedisConnectionFactory redisConnectionFactory) {
+        return (Jedis) redisConnectionFactory.getConnection().getNativeConnection();
     }
 }
