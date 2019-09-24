@@ -1,5 +1,6 @@
-package com.wangsp.lock;
+package com.wangsp.lock.redis;
 
+import com.wangsp.lock.AbstractDistributedLock;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import redis.clients.jedis.Jedis;
@@ -17,6 +18,7 @@ import java.util.UUID;
 @Slf4j
 public abstract class RedisDistributedLock extends AbstractDistributedLock {
 
+    /** redis key 失效时间，不能设置过小。失效时间过小的话，业务代码还没执行，锁就失效了。 */
     private static final int TIMEOUT = 10;
 
     @Resource
@@ -32,14 +34,14 @@ public abstract class RedisDistributedLock extends AbstractDistributedLock {
         Jedis jedis = (Jedis) redisConnectionFactory.getConnection().getNativeConnection();
 
         new Thread(() -> {
-            System.out.println("121111");
             while (true) {
                 if (null != currentLockThread && currentLockThread.isAlive()) {
+                    log.debug("the thread {} is alive, extend the [{}] lock time", currentLockThread.getName(), lockName());
                     jedis.expire(lockName(), TIMEOUT);
                     try {
                         Thread.sleep(TIMEOUT / 2);
                     } catch (InterruptedException e) {
-                        log.error("The thread sleep failure");
+                        log.error("The thread {} sleep failure", currentLockThread.getName());
                     }
                 }
             }
@@ -55,13 +57,21 @@ public abstract class RedisDistributedLock extends AbstractDistributedLock {
 
     @Override
     public boolean distributedLock() {
+        if (null != currentLockThread && currentLockThread.isAlive()) {
+            return false;
+        }
+
         Jedis jedis = (Jedis) redisConnectionFactory.getConnection().getNativeConnection();
 
-        String result = jedis.set(lockName(), UUID.randomUUID().toString(), "NX", "PX", TIMEOUT);
+        String uuid = UUID.randomUUID().toString();
+        String result = jedis.set(lockName(), uuid, "NX", "EX", TIMEOUT);
+        //防止jedis pool 溢出，必须使用马上释放掉
+        jedis.close();
 
         boolean isLocked = "OK".equals(result);
 
         if (isLocked) {
+            log.info("The thread {} has acquired the [{}] lock, uuid: {}", Thread.currentThread().getName(), lockName(), uuid);
             this.currentLockThread = Thread.currentThread();
         }
 
@@ -71,6 +81,11 @@ public abstract class RedisDistributedLock extends AbstractDistributedLock {
     @Override
     public void distributedUnlock() {
         Jedis jedis = (Jedis) redisConnectionFactory.getConnection().getNativeConnection();
+        this.currentLockThread = null;
+
         jedis.del(lockName());
+        jedis.close();
+
+        log.info("The thread {} has released the [{}] lock", Thread.currentThread().getName(), lockName());
     }
 }

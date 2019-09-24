@@ -1,6 +1,6 @@
-package com.wangsp.lock;
+package com.wangsp.lock.redis;
 
-import org.springframework.context.annotation.DependsOn;
+import com.wangsp.lock.redis.RedisDistributedLock;
 import org.springframework.stereotype.Component;
 
 /**
