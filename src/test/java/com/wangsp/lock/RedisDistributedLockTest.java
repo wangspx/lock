@@ -53,6 +53,7 @@ public class RedisDistributedLockTest {
                 System.out.println("为什么到这里就是不执行");
                 jedis2.set("key2","4444");
                 System.out.println(jedis2.get("key2"));
+                jedis2.close();
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
