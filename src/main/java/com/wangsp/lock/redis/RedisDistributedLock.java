@@ -7,6 +7,8 @@ import redis.clients.jedis.Jedis;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.UUID;
 
 /**
@@ -25,6 +27,8 @@ public abstract class RedisDistributedLock extends AbstractDistributedLock {
     private RedisConnectionFactory redisConnectionFactory;
 
     private Thread currentLockThread;
+
+    private ThreadLocal<String> local = new ThreadLocal<>();
 
     @PostConstruct
     private void initSpinlock() {
@@ -72,6 +76,7 @@ public abstract class RedisDistributedLock extends AbstractDistributedLock {
 
         if (isLocked) {
             log.info("The thread {} has acquired the [{}] lock, uuid: {}", Thread.currentThread().getName(), lockName(), uuid);
+            local.set(uuid);
             this.currentLockThread = Thread.currentThread();
         }
 
@@ -81,11 +86,19 @@ public abstract class RedisDistributedLock extends AbstractDistributedLock {
     @Override
     public void distributedUnlock() {
         Jedis jedis = (Jedis) redisConnectionFactory.getConnection().getNativeConnection();
-        this.currentLockThread = null;
 
-        jedis.del(lockName());
+        String script =
+                "if redis.call(\"get\",KEYS[1]) == ARGV[1] then\r\n" +
+                "    return redis.call(\"del\",KEYS[1])\r\n" +
+                "else\r\n" +
+                "    return 0\r\n" +
+                "end";
+
+        jedis.eval(script, Collections.singletonList(lockName()), Collections.singletonList(local.get()));
         jedis.close();
 
-        log.info("The thread {} has released the [{}] lock", Thread.currentThread().getName(), lockName());
+        this.currentLockThread = null;
+
+        log.info("The thread {} has released the [{}] lock, uuid: {}", Thread.currentThread().getName(), lockName(), local.get());
     }
 }
