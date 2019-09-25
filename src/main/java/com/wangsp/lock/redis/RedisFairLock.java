@@ -21,7 +21,7 @@ import java.util.concurrent.Semaphore;
 public abstract class RedisFairLock extends AbstractDistributedLock {
 
     /** redis key 失效时间，不能设置过小。失效时间过小的话，业务代码还没执行，锁就失效了。 */
-    private static final int TIMEOUT = 10;
+    private static final int TIMEOUT = 20;
 
     @Resource
     private RedisConnectionFactory redisConnectionFactory;
@@ -31,7 +31,7 @@ public abstract class RedisFairLock extends AbstractDistributedLock {
     ThreadLocal<String> local = new ThreadLocal<>();
 
     /** 每次只允许一个线程去访问redis，不然锁释放的一瞬间，大量的线程去访问redis，会导致连接异常 */
-    private Semaphore semaphore = new Semaphore(1);
+    private Semaphore semaphore = new Semaphore(1, true);
 
     @PostConstruct
     private void initSpinlock() {
@@ -110,5 +110,6 @@ public abstract class RedisFairLock extends AbstractDistributedLock {
         this.currentLockThread = null;
 
         log.debug("The thread {} has released the [{}] lock, uuid: {}", Thread.currentThread().getName(), lockName(), local.get());
+        local.remove();
     }
 }

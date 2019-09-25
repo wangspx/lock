@@ -15,7 +15,7 @@ import java.util.concurrent.locks.Lock;
 @Slf4j
 public abstract class AbstractDistributedLock implements Lock {
 
-    private static final int SLEEP_TIME = 1000;
+    private static final int SLEEP_TIME = 3000;
 
     /**
      * 分布式锁加锁过程实现逻辑
