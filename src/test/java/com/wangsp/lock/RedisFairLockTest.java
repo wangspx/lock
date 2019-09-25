@@ -19,7 +19,7 @@ import java.util.concurrent.*;
 @Slf4j
 @RunWith(SpringRunner.class)
 @SpringBootTest
-public class RedisDistributedLockTest {
+public class RedisFairLockTest {
 
     private static final int SUMMER = 2;
 

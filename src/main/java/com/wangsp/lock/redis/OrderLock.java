@@ -1,6 +1,5 @@
 package com.wangsp.lock.redis;
 
-import com.wangsp.lock.redis.RedisDistributedLock;
 import org.springframework.stereotype.Component;
 
 /**
@@ -8,7 +7,7 @@ import org.springframework.stereotype.Component;
  * @version 1.0.0
  */
 @Component
-public class OrderLock extends RedisDistributedLock {
+public class OrderLock extends RedisFairLock {
     @Override
     public String lockName() {
         return "lock:order";

@@ -7,7 +7,6 @@ import redis.clients.jedis.Jedis;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
 
@@ -18,7 +17,7 @@ import java.util.UUID;
  * @version 1.0.0
  */
 @Slf4j
-public abstract class RedisDistributedLock extends AbstractDistributedLock {
+public abstract class RedisFairLock extends AbstractDistributedLock {
 
     /** redis key 失效时间，不能设置过小。失效时间过小的话，业务代码还没执行，锁就失效了。 */
     private static final int TIMEOUT = 10;
@@ -28,7 +27,7 @@ public abstract class RedisDistributedLock extends AbstractDistributedLock {
 
     private Thread currentLockThread;
 
-    private ThreadLocal<String> local = new ThreadLocal<>();
+    ThreadLocal<String> local = new ThreadLocal<>();
 
     @PostConstruct
     private void initSpinlock() {
@@ -69,7 +68,6 @@ public abstract class RedisDistributedLock extends AbstractDistributedLock {
 
         String uuid = UUID.randomUUID().toString();
         String result = jedis.set(lockName(), uuid, "NX", "EX", TIMEOUT);
-        //防止jedis pool 溢出，必须使用马上释放掉
         jedis.close();
 
         boolean isLocked = "OK".equals(result);
