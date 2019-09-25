@@ -35,7 +35,7 @@ public abstract class RedisFairLock extends AbstractDistributedLock {
 
     @PostConstruct
     private void initSpinlock() {
-        log.info("init spinlock");
+        log.debug("init spinlock");
 
         //判断业务线程是否已经执行完成，如果没有就更新锁的失效时间，防止业务线程没执行完成，锁就失效了。
         Jedis jedis = (Jedis) redisConnectionFactory.getConnection().getNativeConnection();
@@ -85,7 +85,7 @@ public abstract class RedisFairLock extends AbstractDistributedLock {
         boolean isLocked = "OK".equals(result);
 
         if (isLocked) {
-            log.info("The thread {} has acquired the [{}] lock, uuid: {}", Thread.currentThread().getName(), lockName(), uuid);
+            log.debug("The thread {} has acquired the [{}] lock, uuid: {}", Thread.currentThread().getName(), lockName(), uuid);
             local.set(uuid);
             this.currentLockThread = Thread.currentThread();
         }
@@ -109,6 +109,6 @@ public abstract class RedisFairLock extends AbstractDistributedLock {
 
         this.currentLockThread = null;
 
-        log.info("The thread {} has released the [{}] lock, uuid: {}", Thread.currentThread().getName(), lockName(), local.get());
+        log.debug("The thread {} has released the [{}] lock, uuid: {}", Thread.currentThread().getName(), lockName(), local.get());
     }
 }
