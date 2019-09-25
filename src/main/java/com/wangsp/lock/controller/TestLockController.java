@@ -2,8 +2,10 @@ package com.wangsp.lock.controller;
 
 import com.wangsp.lock.redis.OrderLock;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import redis.clients.jedis.Jedis;
 
 import javax.annotation.Resource;
 import java.util.concurrent.*;
@@ -15,25 +17,27 @@ import java.util.concurrent.*;
 @Slf4j
 @RestController
 public class TestLockController {
-    private static final int SUMMER = 1000;
+    private static final int SUMMER = 100;
 
     @Resource
     private OrderLock orderLock;
 
-    private static int ticket = 10;
-
     private ExecutorService executor = Executors.newCachedThreadPool();
+
+    @Resource
+    private RedisConnectionFactory redisConnectionFactory;
 
     private CountDownLatch countDownLatch = new CountDownLatch(SUMMER);
 
     private CyclicBarrier cyclicBarrier = new CyclicBarrier(SUMMER, () -> {
-        log.info("所有的线程已经执行完了, 当前票数为：{}", ticket);
-        ticket = 10;
+        log.info("所有的线程已经执行完了, 当前票数为：{}");
     });
 
     @GetMapping("salesTicket")
     public void redisLock_2() {
-        log.info("sales {} ticket", ticket);
+        Jedis jedis1 = (Jedis) redisConnectionFactory.getConnection().getNativeConnection();
+        log.info("sales {} ticket", jedis1.incrBy("ticket", 10L));
+        jedis1.close();
         for (int i = 0; i < SUMMER; i++) {
             executor.execute(() -> {
                 countDownLatch.countDown();
@@ -43,6 +47,8 @@ public class TestLockController {
                     e.printStackTrace();
                 }
                 orderLock.lock();
+                Jedis jedis = (Jedis) redisConnectionFactory.getConnection().getNativeConnection();
+                int ticket = Integer.parseInt(jedis.get("ticket"));
                 if (ticket > 0) {
                     if (ticket == 10) {
                         try {
@@ -52,13 +58,12 @@ public class TestLockController {
                             e.printStackTrace();
                         }
                     }
+                    log.info("线程：{} 销售一张票,剩余票数：{}", Thread.currentThread(), jedis.decr("ticket"));
                     if (ticket == 5) {
-                        ticket--;
                         throw new RuntimeException("莫名巧妙的售票异常");
                     }
-                    ticket = ticket - 1;
-                    log.info("线程：{} 销售一张票,剩余票数：{}", Thread.currentThread(), ticket);
                 }
+                jedis.close();
                 orderLock.unlock();
                 try {
                     cyclicBarrier.await();

@@ -9,6 +9,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.Collections;
 import java.util.UUID;
+import java.util.concurrent.Semaphore;
 
 /**
  * redis 实现分布式锁
@@ -28,6 +29,9 @@ public abstract class RedisFairLock extends AbstractDistributedLock {
     private Thread currentLockThread;
 
     ThreadLocal<String> local = new ThreadLocal<>();
+
+    /** 每次只允许一个线程去访问redis，不然锁释放的一瞬间，大量的线程去访问redis，会导致连接异常 */
+    private Semaphore semaphore = new Semaphore(1);
 
     @PostConstruct
     private void initSpinlock() {
@@ -64,11 +68,19 @@ public abstract class RedisFairLock extends AbstractDistributedLock {
             return false;
         }
 
+        try {
+            semaphore.acquire();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         Jedis jedis = (Jedis) redisConnectionFactory.getConnection().getNativeConnection();
 
         String uuid = UUID.randomUUID().toString();
         String result = jedis.set(lockName(), uuid, "NX", "EX", TIMEOUT);
         jedis.close();
+
+        semaphore.release();
 
         boolean isLocked = "OK".equals(result);
 
@@ -87,10 +99,10 @@ public abstract class RedisFairLock extends AbstractDistributedLock {
 
         String script =
                 "if redis.call(\"get\",KEYS[1]) == ARGV[1] then\r\n" +
-                "    return redis.call(\"del\",KEYS[1])\r\n" +
-                "else\r\n" +
-                "    return 0\r\n" +
-                "end";
+                        "    return redis.call(\"del\",KEYS[1])\r\n" +
+                        "else\r\n" +
+                        "    return 0\r\n" +
+                        "end";
 
         jedis.eval(script, Collections.singletonList(lockName()), Collections.singletonList(local.get()));
         jedis.close();
