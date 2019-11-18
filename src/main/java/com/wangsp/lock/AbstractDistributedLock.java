@@ -40,7 +40,7 @@ public abstract class AbstractDistributedLock implements Lock {
         log.debug("the thread [{}], get the lock Failed", Thread.currentThread().getName());
 
         try {
-            log.debug("thread [{}] sleep {} ms", Thread.currentThread().getName(), SLEEP_TIME);
+            log.debug("thread [{}] wait {} ms", Thread.currentThread().getName(), SLEEP_TIME);
             Thread.sleep(SLEEP_TIME);
         } catch (InterruptedException e) {
             e.printStackTrace();

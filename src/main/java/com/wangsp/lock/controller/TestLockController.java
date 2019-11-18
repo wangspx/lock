@@ -88,6 +88,6 @@ public class TestLockController {
     private int getTicket() {
         Jedis jedis1 = (Jedis) redisConnectionFactory.getConnection().getNativeConnection();
         String tickets = jedis1.get("tickets");
-        return 0;
+        return Integer.parseInt(tickets);
     }
 }
