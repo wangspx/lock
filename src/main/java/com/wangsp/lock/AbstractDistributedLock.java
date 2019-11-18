@@ -31,16 +31,16 @@ public abstract class AbstractDistributedLock implements Lock {
 
     @Override
     public void lock() {
-        log.debug("Try to acquire a lock");
+        log.debug("the thread [{}], try to acquire a lock", Thread.currentThread().getName());
         if (tryLock()) {
-            log.debug("Get the lock successfully");
+            log.debug("the thread [{}], get the lock successfully", Thread.currentThread().getName());
             return;
         }
 
-        log.debug("Get the lock Failed");
+        log.debug("the thread [{}], get the lock Failed", Thread.currentThread().getName());
 
         try {
-            log.debug("thread sleep {} ms", SLEEP_TIME);
+            log.debug("thread [{}] sleep {} ms", Thread.currentThread().getName(), SLEEP_TIME);
             Thread.sleep(SLEEP_TIME);
         } catch (InterruptedException e) {
             e.printStackTrace();
